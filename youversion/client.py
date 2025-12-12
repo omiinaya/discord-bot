@@ -1,0 +1,238 @@
+"""API client for YouVersion Verse of the Day."""
+
+import logging
+from datetime import datetime
+from typing import Any, Dict, Optional
+
+import requests
+
+from .auth import YouVersionAuthenticator
+
+logger = logging.getLogger("red.cogfaithup.youversion")
+
+
+class YouVersionClient:
+    """Client for YouVersion API operations."""
+    
+    # API Endpoints
+    VOTD_URL = "https://nodejs.bible.com/api/moments/votd/3.1"
+    BIBLE_CHAPTER_URL = "https://bible.youversionapi.com/3.1/chapter.json"
+    
+    def __init__(self):
+        """Initialize the YouVersion client."""
+        self.authenticator = YouVersionAuthenticator()
+        self._session = requests.Session()
+    
+    def get_verse_of_the_day(self, day: Optional[int] = None) -> Dict[str, Any]:
+        """Get the verse of the day.
+        
+        Args:
+            day: Specific day number (1-365/366). Defaults to current day.
+            
+        Returns:
+            Dictionary containing verse data
+            
+        Raises:
+            ValueError: If API request fails or verse not found
+        """
+        if day is None:
+            day = datetime.now().timetuple().tm_yday
+        
+        try:
+            headers = self.authenticator.get_auth_headers()
+            response = self._session.get(
+                self.VOTD_URL,
+                headers=headers,
+                timeout=30
+            )
+            
+            if response.status_code != 200:
+                raise ValueError(
+                    f"VOTD API request failed: {response.status_code}"
+                )
+            
+            data = response.json()
+            votd_data = data.get("votd", [])
+            
+            # Find verse for the requested day
+            for verse in votd_data:
+                if verse.get("day") == day:
+                    return verse
+            
+            # Fallback to first verse if day not found
+            if votd_data:
+                logger.warning(
+                    f"Verse for day {day} not found, using first available"
+                )
+                return votd_data[0]
+            
+            raise ValueError(f"No verse of the day data found for day {day}")
+            
+        except requests.exceptions.RequestException as e:
+            raise ValueError(f"VOTD API request failed: {e}")
+    
+    def get_verse_text(self, usfm_reference: str, version_id: int = 1) -> Dict[str, Any]:
+        """Get the text for a Bible verse.
+        
+        Args:
+            usfm_reference: USFM reference (e.g., "GEN.1.1")
+            version_id: Bible version ID (default: 1 for KJV)
+            
+        Returns:
+            Dictionary containing verse text and metadata
+            
+        Raises:
+            ValueError: If API request fails
+        """
+        try:
+            headers = self.authenticator.get_auth_headers()
+            params = {
+                "id": version_id,
+                "reference": usfm_reference
+            }
+            
+            response = self._session.get(
+                self.BIBLE_CHAPTER_URL,
+                headers=headers,
+                params=params,
+                timeout=30
+            )
+            
+            if response.status_code != 200:
+                raise ValueError(
+                    f"Bible chapter API request failed: {response.status_code}"
+                )
+            
+            return response.json()
+            
+        except requests.exceptions.RequestException as e:
+            raise ValueError(f"Bible chapter API request failed: {e}")
+    
+    def get_formatted_verse_of_the_day(self, day: Optional[int] = None) -> Dict[str, Any]:
+        """Get the verse of the day with formatted text.
+        
+        Args:
+            day: Specific day number (1-365/366). Defaults to current day.
+            
+        Returns:
+            Dictionary containing verse data with formatted text
+            
+        Raises:
+            ValueError: If API requests fail
+        """
+        # Get the verse reference
+        votd_data = self.get_verse_of_the_day(day)
+        
+        # Extract USFM reference
+        usfm_refs = votd_data.get("usfm", [])
+        if not usfm_refs:
+            raise ValueError("No USFM reference found in VOTD data")
+        
+        # Use the first USFM reference
+        usfm_ref = usfm_refs[0]
+        
+        # Get the verse text
+        chapter_data = self.get_verse_text(usfm_ref)
+        
+        # Extract the specific verse
+        verse_number = self._extract_verse_number(usfm_ref)
+        verse_text = self._extract_verse_text(chapter_data, verse_number)
+        
+        return {
+            "day": votd_data.get("day"),
+            "usfm": usfm_ref,
+            "human_reference": self._usfm_to_human(usfm_ref),
+            "verse_text": verse_text,
+            "version_id": 1,  # Default to KJV
+            "image_id": votd_data.get("image_id")
+        }
+    
+    def _extract_verse_number(self, usfm_ref: str) -> int:
+        """Extract verse number from USFM reference.
+        
+        Args:
+            usfm_ref: USFM reference (e.g., "GEN.1.1")
+            
+        Returns:
+            Verse number
+        """
+        parts = usfm_ref.split(".")
+        if len(parts) >= 3:
+            try:
+                return int(parts[2])
+            except ValueError:
+                pass
+        return 1  # Default to first verse
+    
+    def _extract_verse_text(self, chapter_data: Dict[str, Any], verse_number: int) -> str:
+        """Extract specific verse text from chapter data.
+        
+        Args:
+            chapter_data: Bible chapter data from API
+            verse_number: Verse number to extract
+            
+        Returns:
+            Verse text
+            
+        Raises:
+            ValueError: If verse not found
+        """
+        # The API returns verses in a list format
+        verses = chapter_data.get("verses", [])
+        
+        # Verses are 1-indexed in the list
+        if 1 <= verse_number <= len(verses):
+            return verses[verse_number - 1]
+        
+        # Fallback to first verse if specific verse not found
+        if verses:
+            return verses[0]
+        
+        raise ValueError("No verses found in chapter data")
+    
+    def _usfm_to_human(self, usfm_ref: str) -> str:
+        """Convert USFM reference to human-readable format.
+        
+        Args:
+            usfm_ref: USFM reference (e.g., "GEN.1.1")
+            
+        Returns:
+            Human-readable reference (e.g., "Genesis 1:1")
+        """
+        # Simple mapping for common books
+        book_mapping = {
+            "GEN": "Genesis", "EXO": "Exodus", "LEV": "Leviticus", 
+            "NUM": "Numbers", "DEU": "Deuteronomy", "JOS": "Joshua",
+            "JDG": "Judges", "RUT": "Ruth", "1SA": "1 Samuel",
+            "2SA": "2 Samuel", "1KI": "1 Kings", "2KI": "2 Kings",
+            "1CH": "1 Chronicles", "2CH": "2 Chronicles", "EZR": "Ezra",
+            "NEH": "Nehemiah", "EST": "Esther", "JOB": "Job",
+            "PSA": "Psalm", "PRO": "Proverbs", "ECC": "Ecclesiastes",
+            "SNG": "Song of Solomon", "ISA": "Isaiah", "JER": "Jeremiah",
+            "LAM": "Lamentations", "EZK": "Ezekiel", "DAN": "Daniel",
+            "HOS": "Hosea", "JOL": "Joel", "AMO": "Amos",
+            "OBA": "Obadiah", "JON": "Jonah", "MIC": "Micah",
+            "NAM": "Nahum", "HAB": "Habakkuk", "ZEP": "Zephaniah",
+            "HAG": "Haggai", "ZEC": "Zechariah", "MAL": "Malachi",
+            "MAT": "Matthew", "MRK": "Mark", "LUK": "Luke",
+            "JHN": "John", "ACT": "Acts", "ROM": "Romans",
+            "1CO": "1 Corinthians", "2CO": "2 Corinthians", "GAL": "Galatians",
+            "EPH": "Ephesians", "PHP": "Philippians", "COL": "Colossians",
+            "1TH": "1 Thessalonians", "2TH": "2 Thessalonians",
+            "1TI": "1 Timothy",
+            "2TI": "2 Timothy", "TIT": "Titus", "PHM": "Philemon",
+            "HEB": "Hebrews", "JAS": "James", "1PE": "1 Peter",
+            "2PE": "2 Peter", "1JN": "1 John", "2JN": "2 John",
+            "3JN": "3 John", "JUD": "Jude", "REV": "Revelation"
+        }
+        
+        parts = usfm_ref.split(".")
+        if len(parts) >= 3:
+            book_abbr = parts[0]
+            chapter = parts[1]
+            verse = parts[2]
+            
+            book_name = book_mapping.get(book_abbr, book_abbr)
+            return f"{book_name} {chapter}:{verse}"
+        
+        return usfm_ref  # Return original if parsing fails

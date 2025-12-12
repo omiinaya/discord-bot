@@ -1,6 +1,7 @@
 """MyCog module for Discord bot commands implementing various fun utilities."""
 import logging
 import random
+from typing import Optional
 
 import discord
 from dotenv import load_dotenv
@@ -8,6 +9,7 @@ from redbot.core import commands
 
 from .localization import t
 from .utils import is_valid_member
+from .youversion.client import YouVersionClient
 
 # Load environment variables from .env file.
 load_dotenv()
@@ -182,6 +184,40 @@ class MyCog(commands.Cog):
         await ctx.send(message)
 
     @commands.command()
+    async def votd(self, ctx: commands.Context, day: Optional[int] = None) -> None:
+        """Get the Verse of the Day from YouVersion."""
+        logger.info("votd called by %s", ctx.author)
+        
+        try:
+            client = YouVersionClient()
+            verse_data = client.get_formatted_verse_of_the_day(day)
+            
+            # Format the message
+            message = (
+                f"📖 **Verse of the Day** (Day {verse_data['day']})\n"
+                f"**{verse_data['human_reference']}**\n"
+                f"{verse_data['verse_text']}\n"
+                f"*Powered by YouVersion Bible*"
+            )
+            
+            await ctx.send(message)
+            
+        except ValueError as e:
+            logger.error("Error fetching verse of the day: %s", e)
+            error_msg = (
+                f"{ctx.author.mention}, I couldn't fetch the verse of the day. "
+                "Please check if YOUVERSION_USERNAME and YOUVERSION_PASSWORD "
+                "are set correctly in the environment variables."
+            )
+            await ctx.send(error_msg)
+        except Exception as e:
+            logger.error("Unexpected error in votd command: %s", e)
+            await ctx.send(
+                f"{ctx.author.mention}, an unexpected error occurred. "
+                "Please try again later."
+            )
+
+    @commands.command()
     async def source(self, ctx: commands.Context) -> None:
         """Returns the GitHub source code link."""
         logger.info("source called by %s", ctx.author)
@@ -204,6 +240,7 @@ class MyCog(commands.Cog):
             ("coinflip", t('desc_coinflip', lang=lang)),
             ("decide", t('desc_decide', lang=lang)),
             ("balding", t('desc_balding', lang=lang)),
+            ("votd", "Get the Verse of the Day from YouVersion"),
             ("source", t('desc_source', lang=lang)),
         ]
         command_list = "\n".join([f"`{name}`: {desc}" for name, desc in cmds])
