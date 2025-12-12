@@ -41,7 +41,7 @@ LOCALES = {
         'desc_secret': 'Sends a secret message to the specified user. Usage: [p]secret @user message',
         'desc_roulette': 'Play text-based Russian roulette.',
         'desc_slots': 'Play a slot machine game with Discord emojis.',
-        'desc_coinflip': 'Play text-based coin flip game.',
+        'desc_coinflip': 'Flip a coin and return heads or tails.',
         'desc_decide': 'Randomly decide yes or no.',
         'desc_balding': 'Returns a random balding percentage.'
     },
@@ -86,7 +86,7 @@ LOCALES = {
         'desc_secret': 'Envía un mensaje secreto al usuario especificado. Uso: [p]secret @usuario mensaje',
         'desc_roulette': 'Juega ruleta rusa en texto.',
         'desc_slots': 'Juega a la máquina tragamonedas con emojis de Discord.',
-        'desc_coinflip': 'Juega a lanzar una moneda.',
+        'desc_coinflip': 'Lanza una moneda y devuelve cara o cruz.',
         'desc_decide': 'Decide aleatoriamente sí o no.',
         'desc_balding': 'Devuelve un porcentaje de calvicie aleatorio.',
     }

@@ -124,31 +124,11 @@ class MyCog(commands.Cog):
         await ctx.send(f"{result}\n{message}")
 
     @commands.command()
-    async def coinflip(self, ctx: commands.Context, bet_on: Optional[str] = None, lang: str = 'en') -> None:
-        """Play text-based coin flip game."""
-        logger.info(f"coinflip called by {ctx.author} with bet_on={bet_on}")
-        if not bet_on:
-            await ctx.send(t('coinflip_specify', lang=lang))
-            return
-        try:
-            bet_on = bet_on.lower()
-            if bet_on not in ['even', 'odd', 'par', 'impar']:
-                await ctx.send(t('coinflip_specify', lang=lang))
-                return
-            outcome = random.randint(1, 2)
-            result = "odd" if outcome == 1 else "even"
-            # Support Spanish synonyms
-            if bet_on in ['par', 'even']:
-                bet_on = 'even'
-            elif bet_on in ['impar', 'odd']:
-                bet_on = 'odd'
-            if bet_on == result:
-                await ctx.send(t('coinflip_win', lang=lang, result=result))
-            else:
-                await ctx.send(t('coinflip_lose', lang=lang, result=result))
-        except Exception as e:
-            logger.error(f"Error in coinflip command: {e}")
-            await ctx.send(t('coinflip_error', lang=lang, error=e))
+    async def coinflip(self, ctx: commands.Context) -> None:
+        """Flip a coin and return heads or tails."""
+        logger.info(f"coinflip called by {ctx.author}")
+        outcome = random.choice(['heads', 'tails'])
+        await ctx.send(f"{ctx.author.mention}, the coin landed on {outcome}!")
 
     @commands.command()
     async def decide(self, ctx: commands.Context) -> None:
