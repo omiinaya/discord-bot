@@ -82,7 +82,7 @@ class MyCog(commands.Cog):
             if target == ctx.author:
                 await ctx.send("Sending test message to yourself...")
             
-            await target.send(message)
+            await target.send(t('secret_dm', lang='en', message=message))
             await ctx.send(t('secret_check_dm', lang='en', user=ctx.author.mention))
         except discord.Forbidden:
             await ctx.send(t('secret_dm_fail', lang='en', user=ctx.author.mention))
