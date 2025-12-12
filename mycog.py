@@ -10,6 +10,7 @@ from redbot.core import commands
 from .localization import t
 from .utils import is_valid_member
 from .youversion.client import YouVersionClient
+from .ai_conversation import ai_handler
 
 # Load environment variables from .env file.
 load_dotenv()
@@ -113,12 +114,18 @@ class MyCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
-        """Handle message events for bot mentions."""
+        """Handle message events for bot mentions and AI conversations."""
         if (self.bot.user.mentioned_in(message) and
                 not message.author.bot):
+            
+            # Check if it's a simple ping/pong
             if "ping" in message.content.lower():
                 logger.info("on_message: ping detected from %s", message.author)
                 await message.channel.send(t('pong', lang='en'))
+                return
+            
+            # Handle AI conversation
+            await self._handle_ai_conversation(message)
 
     @commands.command()
     async def roulette(self, ctx: commands.Context) -> None:
@@ -216,6 +223,53 @@ class MyCog(commands.Cog):
                 "Please try again later."
             )
 
+    async def _handle_ai_conversation(self, message: discord.Message) -> None:
+        """Handle AI conversation when bot is mentioned."""
+        try:
+            # Extract user message (remove bot mention)
+            content = message.content
+            for mention in message.mentions:
+                content = content.replace(f"<@{mention.id}>", "").replace(f"<@!{mention.id}>", "")
+            content = content.strip()
+            
+            if not content:  # Empty message after removing mention
+                await message.channel.send(
+                    f"Hello {message.author.mention}! How can I help you today?"
+                )
+                return
+            
+            # Show typing indicator
+            async with message.channel.typing():
+                # Generate AI response
+                response = await ai_handler.generate_response(
+                    message.author.id, content
+                )
+                
+                # Send response (truncate if too long for Discord)
+                if len(response) > 2000:
+                    response = response[:1997] + "..."
+                
+                await message.channel.send(response)
+                
+        except Exception as e:
+            logger.error(f"Error handling AI conversation: {e}")
+            await message.channel.send(
+                "Sorry, I encountered an error processing your message."
+            )
+
+    @commands.command()
+    async def clear_chat(self, ctx: commands.Context) -> None:
+        """Clear your conversation history with the AI."""
+        logger.info("clear_chat called by %s", ctx.author)
+        if ai_handler.clear_conversation(ctx.author.id):
+            await ctx.send(
+                f"{ctx.author.mention}, your conversation history has been cleared."
+            )
+        else:
+            await ctx.send(
+                f"{ctx.author.mention}, you don't have an active conversation to clear."
+            )
+
     @commands.command()
     async def source(self, ctx: commands.Context) -> None:
         """Returns the GitHub source code link."""
@@ -240,6 +294,7 @@ class MyCog(commands.Cog):
             ("decide", t('desc_decide', lang=lang)),
             ("balding", t('desc_balding', lang=lang)),
             ("votd", "Get the Verse of the Day from YouVersion"),
+            ("clear_chat", "Clear your AI conversation history"),
             ("source", t('desc_source', lang=lang)),
         ]
         command_list = "\n".join([f"`{name}`: {desc}" for name, desc in cmds])

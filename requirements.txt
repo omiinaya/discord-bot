@@ -2,3 +2,4 @@ discord.py
 requests
 python-dotenv
 redbot==3.5.3
+openai
