@@ -138,11 +138,16 @@ class MyCog(commands.Cog):
         await ctx.send(f"{ctx.author.mention}, you measured {measurement} inches.")
         
     @commands.command()
-    async def secret(self, ctx: commands.Context) -> None:
-        """Sends a secret message to the user who invoked the command."""
-        logger.info(f"secret called by {ctx.author}")
+    async def secret(self, ctx: commands.Context, target: commands.MemberConverter, *, message: str) -> None:
+        """Sends a secret message to the specified user."""
+        logger.info(f"secret called by {ctx.author} targeting {target} with message: {message}")
         try:
-            await ctx.author.send(t('secret_dm', lang='en'))
+            valid, error = is_valid_member(ctx, target)
+            if not valid:
+                await ctx.send(error)
+                return
+            
+            await target.send(message)
             await ctx.send(t('secret_check_dm', lang='en', user=ctx.author.mention))
         except discord.Forbidden:
             await ctx.send(t('secret_dm_fail', lang='en', user=ctx.author.mention))
