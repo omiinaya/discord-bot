@@ -19,3 +19,4 @@ Thumbs.db
 *.sublime-workspace
 *.sublime-project
 *.bak
+temp-analysis/

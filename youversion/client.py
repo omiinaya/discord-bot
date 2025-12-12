@@ -39,7 +39,13 @@ class YouVersionClient:
             day = datetime.now().timetuple().tm_yday
         
         try:
-            headers = self.authenticator.get_auth_headers()
+            # VOTD endpoint doesn't require authentication - matches original package
+            headers = {
+                "Referer": "http://android.youversionapi.com/",
+                "X-YouVersion-App-Platform": "android",
+                "X-YouVersion-App-Version": "17114",
+                "X-YouVersion-Client": "youversion",
+            }
             response = self._session.get(
                 self.VOTD_URL,
                 headers=headers,
@@ -54,19 +60,21 @@ class YouVersionClient:
             data = response.json()
             votd_data = data.get("votd", [])
             
-            # Find verse for the requested day
+            # Find verse for the requested day - matches original package logic
             for verse in votd_data:
                 if verse.get("day") == day:
                     return verse
             
-            # Fallback to first verse if day not found
+            # Always fallback to first when available - matches original package
             if votd_data:
                 logger.warning(
                     f"Verse for day {day} not found, using first available"
                 )
                 return votd_data[0]
             
-            raise ValueError(f"No verse of the day data found for day {day}")
+            # No data at all - matches original package
+            day_value = day
+            raise ValueError(f"No verse of the day found for day {day_value}")
             
         except requests.exceptions.RequestException as e:
             raise ValueError(f"VOTD API request failed: {e}")
@@ -86,9 +94,18 @@ class YouVersionClient:
         """
         try:
             headers = self.authenticator.get_auth_headers()
+            
+            # Extract chapter reference from verse reference
+            # Convert "JHN.10.11" to "JHN.10"
+            parts = usfm_reference.split(".")
+            if len(parts) >= 2:
+                chapter_reference = f"{parts[0]}.{parts[1]}"
+            else:
+                chapter_reference = usfm_reference
+            
             params = {
                 "id": version_id,
-                "reference": usfm_reference
+                "reference": chapter_reference
             }
             
             response = self._session.get(
@@ -99,6 +116,8 @@ class YouVersionClient:
             )
             
             if response.status_code != 200:
+                # Log the response for debugging
+                print(f"API Response: {response.status_code} - {response.text}")
                 raise ValueError(
                     f"Bible chapter API request failed: {response.status_code}"
                 )
@@ -177,18 +196,34 @@ class YouVersionClient:
         Raises:
             ValueError: If verse not found
         """
-        # The API returns verses in a list format
-        verses = chapter_data.get("verses", [])
+        # The API returns verses embedded in HTML content under response.data
+        content = chapter_data.get("response", {}).get("data", {}).get("content", "")
         
-        # Verses are 1-indexed in the list
-        if 1 <= verse_number <= len(verses):
-            return verses[verse_number - 1]
+        # Parse HTML to find the specific verse
+        # Look for span with class "verse v{number}" and extract text
+        import re
         
-        # Fallback to first verse if specific verse not found
-        if verses:
-            return verses[0]
+        # Pattern to find verse span with the specific verse number
+        pattern = rf'<span class="verse v{verse_number}"[^>]*>.*?<span class="wj"><span class="content">(.*?)</span></span>'
+        match = re.search(pattern, content, re.DOTALL)
         
-        raise ValueError("No verses found in chapter data")
+        if match:
+            verse_text = match.group(1).strip()
+            # Clean up any HTML entities or extra whitespace
+            verse_text = re.sub(r'\s+', ' ', verse_text)
+            return verse_text
+        
+        # Fallback: try to find verse in any verse span
+        pattern_fallback = r'<span class="verse v\d+"[^>]*>.*?<span class="wj"><span class="content">(.*?)</span></span>'
+        matches = re.findall(pattern_fallback, content, re.DOTALL)
+        
+        if matches:
+            # Return first verse found as fallback
+            verse_text = matches[0].strip()
+            verse_text = re.sub(r'\s+', ' ', verse_text)
+            return verse_text
+        
+        raise ValueError(f"Verse {verse_number} not found in chapter data")
     
     def _usfm_to_human(self, usfm_ref: str) -> str:
         """Convert USFM reference to human-readable format.
