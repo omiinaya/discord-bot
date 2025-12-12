@@ -11,7 +11,7 @@ from .utils import is_valid_member
 from .api_helpers import fetch_json
 from .localization import t
 
-# Load environment variables from .env file
+# Load environment variables from .env file.
 load_dotenv()
 logger = logging.getLogger("red.cogfaithup.mycog")
 
