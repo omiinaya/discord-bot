@@ -2,7 +2,7 @@ import requests
 import logging
 from typing import Optional
 
-logger = logging.getLogger("red.coghedrin.api_helpers")
+logger = logging.getLogger("red.cogfaithup.api_helpers")
 
 def fetch_json(url: str, timeout: int = 10) -> Optional[dict]:
     """Fetch JSON data from a URL, return dict or None on error."""

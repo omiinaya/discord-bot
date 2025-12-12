@@ -1,4 +1,4 @@
-# Coghedrin
+# Cogfaithup
 
 A custom Red-DiscordBot cog with fun commands, API integrations, and event listeners.
 
@@ -18,7 +18,7 @@ A custom Red-DiscordBot cog with fun commands, API integrations, and event liste
 - `discord.py` and `requests` libraries
 
 ### Installation
-1. Clone this repo or copy the `coghedrin` folder to your RedBot cogs directory
+1. Clone this repo or copy the `cogfaithup` folder to your RedBot cogs directory
 2. Install dependencies:
    ```bash
    pip install -r requirements.txt
@@ -26,7 +26,7 @@ A custom Red-DiscordBot cog with fun commands, API integrations, and event liste
 3. Add your `.env` file with any required secrets (see below)
 4. Load the cog in RedBot:
    ```
-   [p]load coghedrin
+   [p]load cogfaithup
    ```
 
 ### Environment Variables
@@ -35,7 +35,7 @@ A custom Red-DiscordBot cog with fun commands, API integrations, and event liste
 - `DAYNIGHT_API` - URL for day/night data
 
 ## Usage Examples
-- `[p]pinghedrin` - Pong!
+- `[p]pingfaithup` - Pong!
 - `[p]roll` - Roll 1-100
 - `[p]dice` - Roll 1-6
 - `[p]rps @user` - Rock-paper-scissors

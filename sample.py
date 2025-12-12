@@ -7,7 +7,7 @@ from typing import Optional
 
 # Load environment variables from .env file
 load_dotenv()
-logger = logging.getLogger("red.coghedrin.sample")
+logger = logging.getLogger("red.cogfaithup.sample")
 
 class MyCog(commands.Cog):
     """My custom cog for sample commands and listeners."""

@@ -1,4 +1,4 @@
-# Contributing to Coghedrin
+# Contributing to Cogfaithup
 
 Thank you for considering contributing!
 

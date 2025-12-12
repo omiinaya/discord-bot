@@ -1,4 +1,4 @@
-# Security Policy: Coghedrin
+# Security Policy: Cogfaithup
 
 ## Reporting a Vulnerability
 Open an issue or contact the maintainer if you discover a security vulnerability.

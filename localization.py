@@ -1,4 +1,4 @@
-# Simple localization demo for Coghedrin
+# Simple localization demo for Cogfaithup
 LOCALES = {
     'en': {
         'pong': 'Pong!',
@@ -29,7 +29,7 @@ LOCALES = {
         'api_failed': 'Failed to retrieve data from the API. Status: {status}',
         'api_failed_exception': 'API call failed: {error}',
         'unexpected_error': 'Unexpected error: {error}',
-        'desc_pinghedrin': 'Responds with Pong! for health check.',
+        'desc_pingfaithup': 'Responds with Pong! for health check.',
         'desc_roll': 'Roll a random number from 1-100.',
         'desc_dice': 'Roll a random number from 1-6.',
         'desc_rps': 'Play Rock-Paper-Scissors against another player or the bot.',
@@ -74,7 +74,7 @@ LOCALES = {
         'api_failed': 'No se pudo obtener datos de la API. Estado: {status}',
         'api_failed_exception': 'La llamada a la API falló: {error}',
         'unexpected_error': 'Error inesperado: {error}',
-        'desc_pinghedrin': '¡Responde con Pong! para comprobar el estado.',
+        'desc_pingfaithup': '¡Responde con Pong! para comprobar el estado.',
         'desc_roll': 'Lanza un número aleatorio del 1 al 100.',
         'desc_dice': 'Lanza un número aleatorio del 1 al 6.',
         'desc_rps': 'Juega piedra, papel o tijeras contra otro jugador o el bot.',

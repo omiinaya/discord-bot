@@ -1,6 +1,6 @@
 import pytest
 from redbot.core import commands
-from coghedrin.mycog import is_valid_member
+from cogfaithup.mycog import is_valid_member
 
 class DummyCtx:
     def __init__(self, author):

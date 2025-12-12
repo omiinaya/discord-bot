@@ -13,7 +13,7 @@ from .localization import t
 
 # Load environment variables from .env file
 load_dotenv()
-logger = logging.getLogger("red.coghedrin.mycog")
+logger = logging.getLogger("red.cogfaithup.mycog")
 
 class MyCog(commands.Cog):
     """My custom cog with fun commands and best practices."""
