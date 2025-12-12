@@ -1,19 +1,18 @@
+"""MyCog module for Discord bot commands implementing various fun utilities."""
+import logging
 import random
-import requests
-import os
+
 import discord
 from dotenv import load_dotenv
 from redbot.core import commands
-from datetime import datetime
-import logging
-from typing import Optional
-from .utils import is_valid_member
-from .api_helpers import fetch_json
+
 from .localization import t
+from .utils import is_valid_member
 
 # Load environment variables from .env file.
 load_dotenv()
 logger = logging.getLogger("red.cogfaithup.mycog")
+
 
 class MyCog(commands.Cog):
     """My custom cog with fun commands and best practices."""
@@ -26,7 +25,7 @@ class MyCog(commands.Cog):
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def roll(self, ctx: commands.Context, lang: str = 'en') -> None:
         """Roll a random number from 1-100. (5s cooldown per user, supports localization)"""
-        logger.info(f"roll called by {ctx.author}")
+        logger.info("roll called by %s", ctx.author)
         random_number = random.randint(1, 100)
         await ctx.send(t('roll', lang=lang, user=ctx.author.mention, number=random_number))
 
@@ -34,7 +33,7 @@ class MyCog(commands.Cog):
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def dice(self, ctx: commands.Context) -> None:
         """Roll a random number from 1-6. (5s cooldown per user)"""
-        logger.info(f"dice called by {ctx.author}")
+        logger.info("dice called by %s", ctx.author)
         random_number = random.randint(1, 6)
         await ctx.send(f"{ctx.author.mention}, you rolled a {random_number}")
 
@@ -42,7 +41,7 @@ class MyCog(commands.Cog):
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def rps(self, ctx: commands.Context, opponent: commands.MemberConverter) -> None:
         """Play Rock-Paper-Scissors against another player. (10s cooldown per user)"""
-        logger.info(f"rps called by {ctx.author} vs {opponent}")
+        logger.info("rps called by %s vs %s", ctx.author, opponent)
         try:
             valid, error = is_valid_member(ctx, opponent)
             if not valid:
@@ -52,66 +51,78 @@ class MyCog(commands.Cog):
             user_choice = random.choice(choices)
             opponent_choice = random.choice(choices)
             result = None
+
+            # Simplify the complex boolean expression
+            win_conditions = {
+                ("rock", "scissors"): True,
+                ("scissors", "paper"): True,
+                ("paper", "rock"): True
+            }
+
             if user_choice == opponent_choice:
                 result = t('draw', lang='en')
-            elif (user_choice == "rock" and opponent_choice == "scissors") or \
-                 (user_choice == "scissors" and opponent_choice == "paper") or \
-                 (user_choice == "paper" and opponent_choice == "rock"):
+            elif win_conditions.get((user_choice, opponent_choice)):
                 result = t('user_win', lang='en', user=ctx.author.mention)
             else:
                 result = t('opponent_win', lang='en', opponent=opponent.mention)
-            await ctx.send(
-                t('rps_result', lang='en', user=ctx.author.mention, user_choice=user_choice, opponent=opponent.mention, opponent_choice=opponent_choice, result=result)
-            )
-        except Exception as e:
-            logger.error(f"Error in rps command: {e}")
+
+            # Fix line length by splitting the long line
+            message = t('rps_result', lang='en', user=ctx.author.mention,
+                       user_choice=user_choice, opponent=opponent.mention,
+                       opponent_choice=opponent_choice, result=result)
+            await ctx.send(message)
+        except discord.DiscordException as e:
+            logger.error("Error in rps command: %s", e)
             await ctx.send(f"Error: {e}")
 
     @commands.command()
-    async def measure(self, ctx):
+    async def measure(self, ctx: commands.Context) -> None:
         """Responds randomly with 1 - 14 inches."""
         measurement = random.randint(1, 14)
         await ctx.send(f"{ctx.author.mention}, you measured {measurement} inches.")
-        
+
     @commands.command()
-    async def secret(self, ctx: commands.Context, target: commands.MemberConverter, *, message: str) -> None:
+    async def secret(self, ctx: commands.Context, target: commands.MemberConverter, *,
+                    message: str) -> None:
         """Sends a secret message to the specified user."""
-        logger.info(f"secret called by {ctx.author} targeting {target} with message: {message}")
+        logger.info("secret called by %s targeting %s with message: %s",
+                   ctx.author, target, message)
         try:
             # Allow sending messages to self for testing
             if target == ctx.author:
                 await ctx.send("Sending test message to yourself...")
-            
+
             await target.send(t('secret_dm', lang='en', message=message))
             await ctx.send(t('secret_check_dm', lang='en', user=ctx.author.mention))
         except discord.Forbidden:
             await ctx.send(t('secret_dm_fail', lang='en', user=ctx.author.mention))
-            
+
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
+        """Handle message events for bot mentions."""
         if self.bot.user.mentioned_in(message) and not message.author.bot:
             if "ping" in message.content.lower():
-                logger.info(f"on_message: ping detected from {message.author}")
+                logger.info("on_message: ping detected from %s", message.author)
                 await message.channel.send(t('pong', lang='en'))
-                
+
     @commands.command()
     async def roulette(self, ctx: commands.Context) -> None:
         """Play text-based Russian roulette where you have a 1/6 chance to die."""
-        logger.info(f"roulette called by {ctx.author}")
+        logger.info("roulette called by %s", ctx.author)
         try:
             outcome = random.randint(1, 6)
             if outcome == 6:
                 await ctx.send(t('roulette_dead', lang='en', outcome=outcome))
             else:
                 await ctx.send(t('roulette_survive', lang='en', outcome=outcome))
-        except Exception as e:
-            logger.error(f"Error in roulette command: {e}")
+        except discord.DiscordException as e:
+            logger.error("Error in roulette command: %s", e)
             await ctx.send(t('roulette_error', lang='en', error=e))
 
     @commands.command()
     async def slots(self, ctx: commands.Context) -> None:
         """Play a slot machine game with Discord emojis."""
-        logger.info(f"slots called by {ctx.author}")
+        logger.info("slots called by %s", ctx.author)
         emojis = [":cherries:", ":lemon:", ":strawberry:", ":grapes:", ":seven:", ":bell:"]
         slot1 = random.choice(emojis)
         slot2 = random.choice(emojis)
@@ -126,36 +137,40 @@ class MyCog(commands.Cog):
     @commands.command()
     async def coinflip(self, ctx: commands.Context) -> None:
         """Flip a coin and return heads or tails."""
-        logger.info(f"coinflip called by {ctx.author}")
+        logger.info("coinflip called by %s", ctx.author)
         outcome = random.choice(['heads', 'tails'])
         await ctx.send(f"{ctx.author.mention}, the coin landed on {outcome}!")
 
     @commands.command()
     async def decide(self, ctx: commands.Context) -> None:
         """Randomly decide yes or no."""
-        logger.info(f"decide called by {ctx.author}")
-        await ctx.send(t('decide_yes', lang='en') if random.random() < 0.5 else t('decide_no', lang='en'))
+        logger.info("decide called by %s", ctx.author)
+        result = t('decide_yes', lang='en') if random.random() < 0.5 else t('decide_no', lang='en')
+        await ctx.send(result)
 
     @commands.command()
     async def balding(self, ctx: commands.Context) -> None:
         """Returns a random balding percentage."""
-        logger.info(f"balding called by {ctx.author}")
+        logger.info("balding called by %s", ctx.author)
         percent = random.randint(0, 100)
         if percent == 0:
             await ctx.send(t('balding_none', lang='en'))
         else:
-            await ctx.send(t('balding_percent', lang='en', user=ctx.author.mention, percent=percent))
+            message = t('balding_percent', lang='en', user=ctx.author.mention, percent=percent)
+            await ctx.send(message)
 
     @commands.command()
     async def source(self, ctx: commands.Context) -> None:
         """Returns the GitHub source code link."""
-        logger.info(f"source called by {ctx.author}")
-        await ctx.send(f"{ctx.author.mention}, here's the source code: https://github.com/omiinaya/faithup-discord-bot")
+        logger.info("source called by %s", ctx.author)
+        message = (f"{ctx.author.mention}, here's the source code: "
+                   "https://github.com/omiinaya/faithup-discord-bot")
+        await ctx.send(message)
 
     @commands.command()
     async def commands(self, ctx: commands.Context, lang: str = 'en') -> None:
         """Lists all available commands and their descriptions."""
-        logger.info(f"commands called by {ctx.author}")
+        logger.info("commands called by %s", ctx.author)
         cmds = [
             ("roll", t('desc_roll', lang=lang)),
             ("dice", t('desc_dice', lang=lang)),
@@ -172,5 +187,7 @@ class MyCog(commands.Cog):
         msg = "**Available Commands:**\n" + "\n".join([f"`{name}`: {desc}" for name, desc in cmds])
         await ctx.send(msg)
 
+
 async def setup(bot: commands.Bot) -> None:
+    """Setup function to add the cog to the bot."""
     await bot.add_cog(MyCog(bot))
