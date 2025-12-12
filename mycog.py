@@ -124,7 +124,7 @@ class MyCog(commands.Cog):
                 await message.channel.send(t('pong', lang='en'))
                 return
             
-            # Handle AI conversation
+            # Handle AI conversation (which now includes command integration)
             await self._handle_ai_conversation(message)
 
     @commands.command()
@@ -238,11 +238,6 @@ class MyCog(commands.Cog):
                 )
                 return
             
-            # Check if this is a command request that we can execute
-            command_result = await self._try_execute_command(message, content)
-            if command_result:
-                return  # Command was executed, no need for AI response
-            
             # Show typing indicator
             async with message.channel.typing():
                 # Generate AI response
@@ -273,6 +268,7 @@ class MyCog(commands.Cog):
             'dice roll': self._execute_roll_direct,
             'coin flip': self._execute_coinflip_direct,
             'flip coin': self._execute_coinflip_direct,
+            'flip a coin': self._execute_coinflip_direct,  # Added variation
             'slot machine': self._execute_slots_direct,
             'russian roulette': self._execute_roulette_direct,
             'random number': self._execute_roll_direct,
