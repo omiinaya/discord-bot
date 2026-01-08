@@ -9,8 +9,8 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import httpx
-from ..async_http_client import get_async_client
-from ..rate_limiter import RateLimiter
+from async_http_client import get_async_client
+from rate_limiter import get_limiter_from_env
 
 from .auth import YouVersionAuthenticator
 
@@ -44,7 +44,7 @@ class YouVersionClient:
     def __init__(self):
         """Initialize the YouVersion client."""
         self.authenticator = YouVersionAuthenticator()
-        self._client = get_async_client()
+        self._client = get_async_client
         self._votd_cache = collections.OrderedDict()  # day -> (ts, data)
         self._cache_ttl = 86400  # 24 hours in seconds
         self._cache_maxsize = 100  # maximum number of cached entries

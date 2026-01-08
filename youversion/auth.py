@@ -7,7 +7,7 @@ from typing import Optional
 
 import httpx
 from dotenv import load_dotenv
-from ..async_http_client import apost
+from async_http_client import apost
 
 # Load environment variables
 load_dotenv()
